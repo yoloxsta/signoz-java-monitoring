@@ -1,36 +1,36 @@
 version: "2"
 
 services:
-  # TODO: Spring Petclinic is not working with MySQL DB, need to fix it.
-  #       Currently, it is using default H2 DB.
-  #
-  # mysql-db:
-  #   image: mysql:5.7
-  #   restart: always
-  #   ports:
-  #     - "3306:3306"
-  #   environment:
-  #     - MYSQL_ROOT_PASSWORD=
-  #     - MYSQL_ALLOW_EMPTY_PASSWORD=true
-  #     - MYSQL_USER=petclinic
-  #     - MYSQL_PASSWORD=petclinic
-  #     - MYSQL_DATABASE=petclinic
-  #   volumes:
-  #     - "./conf.d:/etc/mysql/conf.d:ro"
+  mysql-db:
+    image: mysql:5.7
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=petclinic
+      - MYSQL_DATABASE=petclinic
+      - MYSQL_USER=petclinic
+      - MYSQL_PASSWORD=petclinic
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   spring-petclinic:
     image: signoz/spring-petclinic:latest
     ports:
       - "8090:8090"
+    depends_on:
+      mysql-db:
+        condition: service_healthy
     extra_hosts:
       - "signoz:host-gateway"
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=https://ingest.us.signoz.cloud:443
       - OTEL_EXPORTER_OTLP_HEADERS=signoz-access-token=05bd0e45-8ea0-4aef-9edc-3f1bc1ce4cc3
       - OTEL_RESOURCE_ATTRIBUTES=service.name=spring-petclinic
-      # - OTEL_EXPORTER_OTLP_ENDPOINT=http://signoz:4317  # Replace with SigNoz OTLP endpoint, if SigNoz not running on host machine
-      # - DATABASE=mysql
-      # - MYSQL_URL=jdbc:mysql://mysql-db/petclinic
-      # - MYSQL_DATABASE=petclinic
-      # - MYSQL_USER=petclinic
-      # - MYSQL_PASS=petclinic
+      - SPRING_PROFILES_ACTIVE=mysql
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/petclinic
+      - SPRING_DATASOURCE_USERNAME=petclinic
+      - SPRING_DATASOURCE_PASSWORD=petclinic

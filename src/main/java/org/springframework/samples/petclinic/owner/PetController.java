@@ -15,6 +15,8 @@
  */
 package org.springframework.samples.petclinic.owner;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.util.StringUtils;
@@ -25,14 +27,11 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.Collection;
 
-/**
- * @author Juergen Hoeller
- * @author Ken Krebs
- * @author Arjen Poutsma
- */
 @Controller
 @RequestMapping("/owners/{ownerId}")
 class PetController {
+
+	private static final Logger logger = LoggerFactory.getLogger(PetController.class);
 
 	private static final String VIEWS_PETS_CREATE_OR_UPDATE_FORM = "pets/createOrUpdatePetForm";
 
@@ -45,26 +44,41 @@ class PetController {
 		this.owners = owners;
 	}
 
+	/**
+	 * Automatically adds list of pet types to the model.
+	 */
 	@ModelAttribute("types")
 	public Collection<PetType> populatePetTypes() {
 		return this.pets.findPetTypes();
 	}
 
+	/**
+	 * Finds and adds the owner associated with the current request path.
+	 */
 	@ModelAttribute("owner")
 	public Owner findOwner(@PathVariable("ownerId") int ownerId) {
 		return this.owners.findById(ownerId);
 	}
 
+	/**
+	 * Disallow 'id' field modification for owner binding.
+	 */
 	@InitBinder("owner")
 	public void initOwnerBinder(WebDataBinder dataBinder) {
 		dataBinder.setDisallowedFields("id");
 	}
 
+	/**
+	 * Sets a validator for pet binding.
+	 */
 	@InitBinder("pet")
 	public void initPetBinder(WebDataBinder dataBinder) {
 		dataBinder.setValidator(new PetValidator());
 	}
 
+	/**
+	 * Initializes form to create a new pet.
+	 */
 	@GetMapping("/pets/new")
 	public String initCreationForm(Owner owner, ModelMap model) {
 		Pet pet = new Pet();
@@ -73,22 +87,32 @@ class PetController {
 		return VIEWS_PETS_CREATE_OR_UPDATE_FORM;
 	}
 
+	/**
+	 * Handles submission of new pet creation form.
+	 */
 	@PostMapping("/pets/new")
 	public String processCreationForm(Owner owner, @Valid Pet pet, BindingResult result, ModelMap model) {
 		if (StringUtils.hasLength(pet.getName()) && pet.isNew() && owner.getPet(pet.getName(), true) != null) {
 			result.rejectValue("name", "duplicate", "already exists");
 		}
+
 		owner.addPet(pet);
+
 		if (result.hasErrors()) {
 			model.put("pet", pet);
+			logger.warn("Pet creation form has errors: {}", result.getAllErrors());
 			return VIEWS_PETS_CREATE_OR_UPDATE_FORM;
 		}
-		else {
-			this.pets.save(pet);
-			return "redirect:/owners/{ownerId}";
-		}
+
+		this.pets.save(pet);
+		logger.info("Created new pet '{}' for owner '{}'", pet.getName(),
+				owner.getFirstName() + " " + owner.getLastName());
+		return "redirect:/owners/{ownerId}";
 	}
 
+	/**
+	 * Initializes form to update an existing pet.
+	 */
 	@GetMapping("/pets/{petId}/edit")
 	public String initUpdateForm(@PathVariable("petId") int petId, ModelMap model) {
 		Pet pet = this.pets.findById(petId);
@@ -96,18 +120,23 @@ class PetController {
 		return VIEWS_PETS_CREATE_OR_UPDATE_FORM;
 	}
 
+	/**
+	 * Handles submission of pet update form.
+	 */
 	@PostMapping("/pets/{petId}/edit")
 	public String processUpdateForm(@Valid Pet pet, BindingResult result, Owner owner, ModelMap model) {
 		if (result.hasErrors()) {
 			pet.setOwner(owner);
 			model.put("pet", pet);
+			logger.warn("Pet update form has errors: {}", result.getAllErrors());
 			return VIEWS_PETS_CREATE_OR_UPDATE_FORM;
 		}
-		else {
-			owner.addPet(pet);
-			this.pets.save(pet);
-			return "redirect:/owners/{ownerId}";
-		}
+
+		owner.addPet(pet);
+		this.pets.save(pet);
+		logger.info("Updated pet '{}' (ID: {}) for owner '{}'", pet.getName(), pet.getId(),
+				owner.getFirstName() + " " + owner.getLastName());
+		return "redirect:/owners/{ownerId}";
 	}
 
 }

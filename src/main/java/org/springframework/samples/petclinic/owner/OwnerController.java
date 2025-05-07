@@ -15,6 +15,8 @@
  */
 package org.springframework.samples.petclinic.owner;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory; // added
 import org.springframework.samples.petclinic.visit.VisitRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -25,12 +27,15 @@ import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.ModelAndView;
+import org.slf4j.*;
 
 import javax.validation.Valid;
 import java.util.Collection;
 import java.util.Map;
 
 /**
+ * Owner Controller - handles owner-related web requests.
+ *
  * @author Juergen Hoeller
  * @author Ken Krebs
  * @author Arjen Poutsma
@@ -38,6 +43,9 @@ import java.util.Map;
  */
 @Controller
 class OwnerController {
+
+	private static final Logger logger = LoggerFactory.getLogger(OwnerController.class); // added
+																							// logger
 
 	private static final String VIEWS_OWNER_CREATE_OR_UPDATE_FORM = "owners/createOrUpdateOwnerForm";
 
@@ -68,7 +76,10 @@ class OwnerController {
 			return VIEWS_OWNER_CREATE_OR_UPDATE_FORM;
 		}
 		else {
+			logger.info("processCreationForm : " + owner);
 			this.owners.save(owner);
+			logger.info("New owner added: {} {} (ID: {})", owner.getFirstName(), owner.getLastName(), owner.getId()); // added
+																														// log
 			return "redirect:/owners/" + owner.getId();
 		}
 	}

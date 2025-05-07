@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+
+    <!-- Define properties -->
+    <property name="logDirectory" value="/logs"/>
+
+    <!-- Define the appenders -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+           <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+         <file>${logDirectory}/myapp.log</file> <!-- The name of the log file -->
+         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+             <fileNamePattern>${logDirectory}/myapp.%d{yyyy-MM-dd}.log</fileNamePattern> <!-- Pattern for archived log files -->
+             <maxHistory>7</maxHistory> <!-- Maximum number of archived log files to keep -->
+         </rollingPolicy>
+         <encoder>
+             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+         </encoder>
+     </appender>
+
+     <!-- Define custom logger levels -->
+     <conversionRule conversionWord="COLOR" converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
+     <root level="INFO">
+         <appender-ref ref="CONSOLE"/> <!-- Connect the CONSOLE appender to the root logger -->
+         <appender-ref ref="FILE"/> <!-- Connect the FILE appender to the root logger -->
+     </root>
+
+     <!-- Define a custom logger -->
+     <logger name="com.example.custom" level="DEBUG" additivity="false">
+         <appender-ref ref="FILE"/>
+     </logger>
+
+     <!-- Define a logger that inherits settings from root logger -->
+     <logger name="org.springframework" level="ERROR" additivity="true">
+         <appender-ref ref="CONSOLE"/>
+     </logger>
+
+     <!-- Define a logger for a specific class -->
+     <logger name="com.example.special.SpecialClass" level="WARN"/>
+
+     <!-- Define log filters -->
+     <turboFilter class="ch.qos.logback.classic.turbo.ThresholdFilter">
+          <level>WARN</level>
+     </turboFilter>
+
+     <!-- Define a marker filter -->
+     <filter class="ch.qos.logback.core.filter.MarkerFilter">
+         <marker>IMPORTANT</marker>
+         <onMatch>DENY</onMatch>
+         <onMismatch>NEUTRAL</onMismatch>
+     </filter>
+
+     <!-- Define a masking converter -->
+     <conversionRule conversionWord="MASK" converterClass="com.example.MaskingConverter"/>
+
+     <!-- Define a shutdown hook -->
+     <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook"/>
+
+</configuration>
